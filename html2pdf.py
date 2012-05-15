@@ -13,9 +13,20 @@ class html2pdf(object):
     pdf_file = None
 
     def __init__(self):
-        self.cmd = '/usr/local/bin/wkhtmltopdf-i386'
+        self.get_cpu()
+        self.cmd = '/usr/local/bin/wkhtmltopdf-{0}'.format(self.cpu)
         self.tmp = '/tmp/{0}.html'.format(randint(1, 100000))
         self.builtinfuncs = dir(self)
+
+    def get_cpu(self):
+        amd = ["grep -i amd /proc/cpuinfo"]
+        intel = ["grep -i intel /proc/cpuinfo"]
+        if self.execute(amd):
+            self.cpu = 'amd64'
+        elif self.execute(intel):
+            self.cpu = 'i386'
+        else:
+            raise Exception('Could not determine CPU')
 
     def execute(self, command):
         try:
@@ -72,9 +83,10 @@ class html2pdf(object):
             'header_left', 'header_line', 'no_header_line', 'header_right',
             'header_spacing', 'replace', 'disable_dotted_lines', 'toc_header_text',
             'toc_level_indentation', 'disable_toc_links', 'toc_text_size_shrink',
-            'xsl_style_sheet']
+            'xsl_style_sheet', 'cover']
         wrapthese = ['title', 'footer_center', 'footer_left', 'footer_right',
             'header_center', 'header_right', 'header_left', 'toc_header_text']
+        escapethese = ['cover']
         realparams = [self.cmd]
 
         for p in dir(self):
@@ -85,7 +97,11 @@ class html2pdf(object):
 
             val = getattr(self, p)
 
-            realparams.append('--' + p)
+            if p in escapethese:
+                realparams.append(p)
+            else:
+                realparams.append('--' + p)
+
             if val is None:
                 continue
             if isinstance(val, str):
@@ -135,3 +151,11 @@ class html2pdf(object):
 
     def bad_mode(self):
         raise Exception("Please use download, string or save")
+
+
+w = html2pdf()
+w.cover = 'protectamerica.com'
+w.url = "http://www.google.com"
+w.render()
+w.pdf_file('cover.pdf')
+w.output('save')
